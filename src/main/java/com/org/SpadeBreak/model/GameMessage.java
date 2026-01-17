@@ -1,19 +1,23 @@
 package com.org.SpadeBreak.model;
 
 
+import com.org.SpadeBreak.components.otherComponents.MessageType;
 import lombok.Data;
 
 @Data
-public class GameMessage {
-    private String type ;
+public class GameMessage<T> {
+    private MessageType type ;
     private String playerId;
-    private Object playLoad;
+    private String roomId;
 
-    public String getType() {
+    private T playLoad;
+    private long timeStamp;
+
+    public MessageType getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(MessageType type) {
         this.type = type;
     }
 
@@ -25,11 +29,11 @@ public class GameMessage {
         this.playerId = playerId;
     }
 
-    public Object getPlayLoad() {
+    public T getPlayLoad() {
         return playLoad;
     }
 
-    public void setPlayLoad(Object playLoad) {
+    public void setPlayLoad(T playLoad) {
         this.playLoad = playLoad;
     }
 }

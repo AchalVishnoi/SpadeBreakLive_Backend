@@ -28,7 +28,6 @@ public class GameWebsocketController {
 
     @MessageMapping("/rooms/{roomId}/action")
     public void onAction(@DestinationVariable String roomId, @Payload GameMessage message){
-        String type=message.getType();
 
     }
 

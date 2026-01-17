@@ -1,4 +1,9 @@
 package com.org.SpadeBreak.components.otherComponents;
 
-public enum RoundState {
+public enum RoundStatus {
+
+    BETTING,
+    PLAYING,
+    TRICK_END,
+    ROUND_END
 }
