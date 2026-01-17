@@ -130,7 +130,6 @@ public class RoomService {
 
         if(room.getPlayers().size()==4&&allReady) startNewGame(roomId);
         return room;
-
     }
 
 }
