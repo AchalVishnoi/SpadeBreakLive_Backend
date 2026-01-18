@@ -1,9 +1,12 @@
 package com.org.SpadeBreak.service;
 
+import com.org.SpadeBreak.components.otherComponents.MessageType;
 import com.org.SpadeBreak.components.otherComponents.Status;
+import com.org.SpadeBreak.controller.GameWebsocketBroadcaster;
 import com.org.SpadeBreak.model.Game;
 import com.org.SpadeBreak.model.Player;
 import com.org.SpadeBreak.model.Room;
+import com.org.SpadeBreak.model.RoundState;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -23,6 +26,9 @@ public class RoomService {
     @Autowired
     private  RedisTemplate<String,Object> redisTemplate;
     private final Duration ROOM_TTL = Duration.ofMinutes(30);
+
+    @Autowired
+    private GameWebsocketBroadcaster broadcaster;
 
 
     private String key(String roomId) {
@@ -79,36 +85,25 @@ public class RoomService {
         redisTemplate.delete(key(roomId));
     }
 
-    public void leaveRoom(String roomId, String playerId) {
+    public Room leaveRoom(String roomId, String playerId) {
         Room room = getRoom(roomId);
-        if (room == null) return;
+        if (room == null) throw new IllegalStateException("room not exist!!");
 
         room.getPlayers().removeIf(p -> p.getId().equals(playerId));
-        if(room.getPlayers().size()<4) room.setStatus(Status.OPEN);
+
+
+        if(room.getPlayers().size()<4){
+            room.setStatus(Status.OPEN);
+            room.setGame(null);
+        }
 
         if (room.getPlayers().isEmpty()) {
             deleteRoom(roomId);
         } else {
             saveRoom(room);
         }
-    }
 
-    public Game startNewGame(String roomId){
-
-        Room room =getRoom(roomId);
-
-        List<Player> players = room.getPlayers();
-
-        HashMap <String,Double> score =new HashMap<>();
-        for(Player player:players){
-            score.put(player.getId(),0.0);
-        }
-
-        Game game =new Game();
-        game.setScore(score);
-
-
-        return game;
+        return room;
     }
 
     public Room playerIsReady(String playerId,String roomId){
@@ -128,7 +123,7 @@ public class RoomService {
 
         saveRoom(room);
 
-        if(room.getPlayers().size()==4&&allReady) startNewGame(roomId);
+        broadcaster.broadcastRoomState(room, MessageType.PLAYER_IS_READY);
         return room;
     }
 

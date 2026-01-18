@@ -1,5 +1,6 @@
 package com.org.SpadeBreak.controller;
 
+import com.org.SpadeBreak.components.otherComponents.MessageType;
 import com.org.SpadeBreak.model.Player;
 import com.org.SpadeBreak.model.Room;
 import com.org.SpadeBreak.service.RoomService;
@@ -16,6 +17,10 @@ public class RoomController {
 
     @Autowired
     private RoomService roomService;
+
+
+    @Autowired
+    private GameWebsocketBroadcaster broadcaster;
 
     @PostMapping
     public ResponseEntity<Room> createRoom(
@@ -39,6 +44,9 @@ public class RoomController {
     public ResponseEntity<?> joinRoom(@PathVariable String roomId, @RequestParam String nickName){
         try {
             Room room = roomService.joinRoom(roomId, nickName);
+
+            broadcaster.broadcastRoomState(room, MessageType.PLAYER_JOINED);
+
             return ResponseEntity.ok(room);
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -47,7 +55,10 @@ public class RoomController {
 
     @PostMapping("/{roomId}/leave")
     public ResponseEntity<?> leaveRoom(@PathVariable String roomId, @RequestParam String playerId) {
-        roomService.leaveRoom(roomId, playerId);
+        Room room= roomService.leaveRoom(roomId, playerId);
+
+        broadcaster.playerLeftRoomStateBroadCast(playerId,room);
+
         return ResponseEntity.ok().build();
     }
 
