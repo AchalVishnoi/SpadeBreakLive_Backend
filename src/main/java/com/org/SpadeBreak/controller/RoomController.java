@@ -1,6 +1,7 @@
 package com.org.SpadeBreak.controller;
 
 import com.org.SpadeBreak.components.otherComponents.MessageType;
+import com.org.SpadeBreak.model.JoinRoomResponse;
 import com.org.SpadeBreak.model.Player;
 import com.org.SpadeBreak.model.Room;
 import com.org.SpadeBreak.service.RoomService;
@@ -23,13 +24,22 @@ public class RoomController {
     private GameWebsocketBroadcaster broadcaster;
 
     @PostMapping
-    public ResponseEntity<Room> createRoom(
+    public ResponseEntity<?> createRoom(
             @RequestParam String name,
-            @RequestParam String nickName) {
+            @RequestParam String nickName,
+            @RequestParam String avatar) {
 
-        Player host = new Player("1", nickName, true);
-        Room room = roomService.createRoom(name,5, host);
-        return ResponseEntity.ok(room);
+        try{
+
+            Player host = new Player("1", nickName, true,avatar);
+            JoinRoomResponse joinRoomResponse = roomService.createRoom(name,5, host);
+            return ResponseEntity.ok(joinRoomResponse);
+
+        } catch (IllegalStateException e) {
+
+            return ResponseEntity.badRequest().body(e.getMessage());
+
+        }
     }
 
 
@@ -41,16 +51,29 @@ public class RoomController {
     }
 
     @PostMapping("/{roomId}/join")
-    public ResponseEntity<?> joinRoom(@PathVariable String roomId, @RequestParam String nickName){
+    public ResponseEntity<?> joinRoom(@PathVariable String roomId, @RequestParam String nickName,@RequestParam String avatar){
         try {
-            Room room = roomService.joinRoom(roomId, nickName);
 
-            broadcaster.broadcastRoomState(room, MessageType.PLAYER_JOINED);
+            JoinRoomResponse joinRoomResponse = roomService.joinRoom(roomId, nickName,avatar);
 
-            return ResponseEntity.ok(room);
+            broadcaster.broadcastRoomState(joinRoomResponse.getRoom(), MessageType.PLAYER_JOINED);
+
+            return ResponseEntity.ok(joinRoomResponse);
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping("reconnect/{reconnectToken}")
+    public ResponseEntity<?> reconnect(@PathVariable String reconnectToken){
+
+        try{
+            JoinRoomResponse joinRoomResponse = roomService.reconnect(reconnectToken);
+            return ResponseEntity.ok(joinRoomResponse);
+        }catch (IllegalStateException e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+
     }
 
     @PostMapping("/{roomId}/leave")

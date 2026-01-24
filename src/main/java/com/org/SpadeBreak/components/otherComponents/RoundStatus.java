@@ -6,4 +6,5 @@ public enum RoundStatus {
     PLAYING,
     TRICK_END,
     ROUND_END
+
 }

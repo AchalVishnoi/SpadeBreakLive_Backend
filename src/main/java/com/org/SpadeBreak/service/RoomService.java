@@ -3,10 +3,7 @@ package com.org.SpadeBreak.service;
 import com.org.SpadeBreak.components.otherComponents.MessageType;
 import com.org.SpadeBreak.components.otherComponents.Status;
 import com.org.SpadeBreak.controller.GameWebsocketBroadcaster;
-import com.org.SpadeBreak.model.Game;
-import com.org.SpadeBreak.model.Player;
-import com.org.SpadeBreak.model.Room;
-import com.org.SpadeBreak.model.RoundState;
+import com.org.SpadeBreak.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -35,7 +32,7 @@ public class RoomService {
         return "room:" + roomId;
     }
 
-    public Room createRoom(String name, int rounds, Player host) {
+    public JoinRoomResponse createRoom(String name, int rounds, Player host) {
         String id = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
 
         Room room = new Room(
@@ -49,14 +46,20 @@ public class RoomService {
         room.getPlayers().add(host);
 
         redisTemplate.opsForValue().set(key(id), room, ROOM_TTL);
-        return room;
+
+
+        return new JoinRoomResponse(
+                room,
+                host.getId(),
+                room.getId()+":"+host.getId()
+        );
     }
 
     public Room getRoom(String id) {
         return (Room) redisTemplate.opsForValue().get(key(id));
     }
 
-    public Room joinRoom(String roomId, String nickName){
+    public JoinRoomResponse joinRoom(String roomId, String nickName, String avatar){
 
         Room room = getRoom(roomId);
         if(room==null) throw new IllegalStateException("Room not found");
@@ -65,16 +68,47 @@ public class RoomService {
         List<Player> players=room.getPlayers();
 
         int playerId = Integer.parseInt(players.get(players.size()-1).getId())+1;
-        Player player =new Player(String.valueOf(playerId),nickName,false);
+        Player player =new Player(String.valueOf(playerId),nickName,false,avatar);
+        String reconnectToken=roomId+":"+player.getId();
+        player.setReconnectToken(reconnectToken);
         players.add(player);
+
         if(players.size()==4){
             room.setStatus(Status.READY);
         }
 
         saveRoom(room);
 
-        return room;
+        JoinRoomResponse joinRoomResponse =new JoinRoomResponse(
+                room,
+                player.getId(),
+                reconnectToken
+        );
 
+        return joinRoomResponse;
+
+    }
+
+    public JoinRoomResponse reconnect(String reconnectToken){
+
+        String[] parts=reconnectToken.split(":");
+
+        String roomId=parts[0];
+        String playerId=parts[1];
+
+        Room room = getRoom(roomId);
+        if(room==null) throw new IllegalStateException("session not exist");
+
+        Player player = room.getPlayers()
+                .stream()
+                .filter(p->p.getId().equals(playerId))
+                .findAny().orElseThrow(()-> new IllegalStateException("Session expired, join room again with room code.."));
+
+        return new JoinRoomResponse(
+                room,
+                playerId,
+                reconnectToken
+        );
     }
 
     public void saveRoom(Room room){

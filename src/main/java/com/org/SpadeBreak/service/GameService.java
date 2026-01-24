@@ -146,10 +146,14 @@ public class GameService {
 
         roomService.saveRoom(room);
 
-        broadcaster.broadcastRoomState(room,MessageType.GAME_SCORE_UPDATED);
+
 
         if(game.getRounds()>0){
+            broadcaster.broadcastRoomState(room,MessageType.GAME_SCORE_UPDATED);
             startRound(roomId);
+        }
+        else{
+            broadcaster.broadcastRoomState(room,MessageType.GAME_COMPLETED);
         }
 
         return room;

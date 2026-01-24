@@ -3,6 +3,7 @@ package com.org.SpadeBreak.service;
 import com.org.SpadeBreak.components.cardComponent.Card;
 import com.org.SpadeBreak.components.cardComponent.Suit;
 import com.org.SpadeBreak.components.otherComponents.MessageType;
+import com.org.SpadeBreak.components.otherComponents.RoundStatus;
 import com.org.SpadeBreak.components.otherComponents.Status;
 import com.org.SpadeBreak.controller.GameWebsocketBroadcaster;
 import com.org.SpadeBreak.controller.GameWebsocketController;
@@ -37,6 +38,31 @@ public class RoundService {
         PlayerRoundScore ps=new PlayerRoundScore();
         ps.setBet(bet);
         playRoundScore.put(playerId,ps);
+        List<Player> players= room.getPlayers();
+        List<String> playerIds= players.stream()
+                .map(Player::getId)
+                .toList();
+
+        int idx=playerIds.indexOf(playerId);
+        if(idx==-1) throw new IllegalStateException("player with playerId not found");
+
+        List<String> playerHandCards=rs.getHandCards().get(playerId);
+
+        String nextPlayerId= playerIds.get((idx+1)%4);
+
+        rs.setPlayerTurn(nextPlayerId);
+
+        boolean allBetDone=true;
+        for(PlayerRoundScore p:playRoundScore.values()){
+            if(p.getBet()==0){
+                allBetDone=false;
+                break;
+            }
+        }
+
+        if(allBetDone){
+            game.getRoundState().setStatus(RoundStatus.PLAYING);
+        }
 
         roomService.saveRoom(room);
 
