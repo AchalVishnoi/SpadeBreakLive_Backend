@@ -42,7 +42,6 @@ public class GameWebsocketBroadcaster {
                         System.currentTimeMillis()
                 )
 
-
         );
     }
 
@@ -57,8 +56,6 @@ public class GameWebsocketBroadcaster {
                         room,
                         System.currentTimeMillis()
                 )
-
-
         );
     }
 
@@ -74,7 +71,6 @@ public class GameWebsocketBroadcaster {
                         System.currentTimeMillis()
                 )
         );
-
     }
 
     public void broadcastMessage(GameMessage<?> msg){

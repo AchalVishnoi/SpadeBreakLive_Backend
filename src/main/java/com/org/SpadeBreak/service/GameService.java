@@ -96,8 +96,6 @@ public class GameService {
 
         RoundState round = new RoundState();
 
-
-
         Deck deck=new Deck();
 
         HashMap<String,List<String>> handCards=new HashMap<>();
@@ -114,7 +112,13 @@ public class GameService {
         round.setScore(score);
         round.setStatus(RoundStatus.BETTING);
         round.setHandCards(handCards);
+        RoundState prevRound= game.getRoundState();
+
+        if(prevRound==null)
         round.setPlayerTurn(room.getPlayers().get(0).getId());
+        else round.setPlayerTurn(prevRound.getPlayerTurn());
+
+
         game.setRoundState(round);
 
 
@@ -153,6 +157,13 @@ public class GameService {
             startRound(roomId);
         }
         else{
+            room.setStatus(Status.GAME_COMPLETED);
+            List<Player> players=room.getPlayers();
+            players.get(0).setReady(false);
+            players.get(1).setReady(false);
+            players.get(2).setReady(false);
+            players.get(3).setReady(false);
+            roomService.saveRoom(room);
             broadcaster.broadcastRoomState(room,MessageType.GAME_COMPLETED);
         }
 

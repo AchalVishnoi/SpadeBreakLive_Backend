@@ -22,7 +22,7 @@ public class RoomService {
 
     @Autowired
     private  RedisTemplate<String,Object> redisTemplate;
-    private final Duration ROOM_TTL = Duration.ofMinutes(30);
+    private final Duration ROOM_TTL = Duration.ofMinutes(120);
 
     @Autowired
     private GameWebsocketBroadcaster broadcaster;
@@ -43,6 +43,7 @@ public class RoomService {
         );
 
         host.setHost(true);
+        host.setReconnectToken(id+":"+host.getId());
         room.getPlayers().add(host);
 
         redisTemplate.opsForValue().set(key(id), room, ROOM_TTL);
@@ -97,7 +98,7 @@ public class RoomService {
         String playerId=parts[1];
 
         Room room = getRoom(roomId);
-        if(room==null) throw new IllegalStateException("session not exist");
+        if(room==null) throw new IllegalStateException("room not exist");
 
         Player player = room.getPlayers()
                 .stream()
@@ -124,7 +125,6 @@ public class RoomService {
         if (room == null) throw new IllegalStateException("room not exist!!");
 
         room.getPlayers().removeIf(p -> p.getId().equals(playerId));
-
 
         if(room.getPlayers().size()<4){
             room.setStatus(Status.OPEN);
@@ -157,7 +157,7 @@ public class RoomService {
 
         saveRoom(room);
 
-        broadcaster.broadcastRoomState(room, MessageType.PLAYER_IS_READY);
+
         return room;
     }
 
