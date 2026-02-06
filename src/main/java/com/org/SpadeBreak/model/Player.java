@@ -10,11 +10,22 @@ public class Player {
     private String nickname;
     private boolean host;
     private boolean isReady;
+    private String avatar;
+    private String reconnectToken;
 
-    public Player(String id, String nickname, boolean host) {
+    public Player(String id, String nickname, boolean host,String avatar) {
         this.id = id;
         this.nickname = nickname;
         this.host = host;
+        this.avatar=avatar;
+    }
+
+    public String getReconnectToken() {
+        return reconnectToken;
+    }
+
+    public void setReconnectToken(String reconnectToken) {
+        this.reconnectToken = reconnectToken;
     }
 
     public String getId() {
@@ -47,5 +58,13 @@ public class Player {
 
     public void setReady(boolean ready) {
         isReady = ready;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
     }
 }

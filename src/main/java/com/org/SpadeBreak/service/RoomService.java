@@ -1,9 +1,9 @@
 package com.org.SpadeBreak.service;
 
+import com.org.SpadeBreak.components.otherComponents.MessageType;
 import com.org.SpadeBreak.components.otherComponents.Status;
-import com.org.SpadeBreak.model.Game;
-import com.org.SpadeBreak.model.Player;
-import com.org.SpadeBreak.model.Room;
+import com.org.SpadeBreak.controller.GameWebsocketBroadcaster;
+import com.org.SpadeBreak.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -22,14 +22,17 @@ public class RoomService {
 
     @Autowired
     private  RedisTemplate<String,Object> redisTemplate;
-    private final Duration ROOM_TTL = Duration.ofMinutes(30);
+    private final Duration ROOM_TTL = Duration.ofMinutes(120);
+
+    @Autowired
+    private GameWebsocketBroadcaster broadcaster;
 
 
     private String key(String roomId) {
         return "room:" + roomId;
     }
 
-    public Room createRoom(String name, int rounds, Player host) {
+    public JoinRoomResponse createRoom(String name, int rounds, Player host) {
         String id = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
 
         Room room = new Room(
@@ -40,17 +43,24 @@ public class RoomService {
         );
 
         host.setHost(true);
+        host.setReconnectToken(id+":"+host.getId());
         room.getPlayers().add(host);
 
         redisTemplate.opsForValue().set(key(id), room, ROOM_TTL);
-        return room;
+
+
+        return new JoinRoomResponse(
+                room,
+                host.getId(),
+                room.getId()+":"+host.getId()
+        );
     }
 
     public Room getRoom(String id) {
         return (Room) redisTemplate.opsForValue().get(key(id));
     }
 
-    public Room joinRoom(String roomId, String nickName){
+    public JoinRoomResponse joinRoom(String roomId, String nickName, String avatar){
 
         Room room = getRoom(roomId);
         if(room==null) throw new IllegalStateException("Room not found");
@@ -59,16 +69,47 @@ public class RoomService {
         List<Player> players=room.getPlayers();
 
         int playerId = Integer.parseInt(players.get(players.size()-1).getId())+1;
-        Player player =new Player(String.valueOf(playerId),nickName,false);
+        Player player =new Player(String.valueOf(playerId),nickName,false,avatar);
+        String reconnectToken=roomId+":"+player.getId();
+        player.setReconnectToken(reconnectToken);
         players.add(player);
+
         if(players.size()==4){
             room.setStatus(Status.READY);
         }
 
         saveRoom(room);
 
-        return room;
+        JoinRoomResponse joinRoomResponse =new JoinRoomResponse(
+                room,
+                player.getId(),
+                reconnectToken
+        );
 
+        return joinRoomResponse;
+
+    }
+
+    public JoinRoomResponse reconnect(String reconnectToken){
+
+        String[] parts=reconnectToken.split(":");
+
+        String roomId=parts[0];
+        String playerId=parts[1];
+
+        Room room = getRoom(roomId);
+        if(room==null) throw new IllegalStateException("room not exist");
+
+        Player player = room.getPlayers()
+                .stream()
+                .filter(p->p.getId().equals(playerId))
+                .findAny().orElseThrow(()-> new IllegalStateException("Session expired, join room again with room code.."));
+
+        return new JoinRoomResponse(
+                room,
+                playerId,
+                reconnectToken
+        );
     }
 
     public void saveRoom(Room room){
@@ -79,36 +120,24 @@ public class RoomService {
         redisTemplate.delete(key(roomId));
     }
 
-    public void leaveRoom(String roomId, String playerId) {
+    public Room leaveRoom(String roomId, String playerId) {
         Room room = getRoom(roomId);
-        if (room == null) return;
+        if (room == null) throw new IllegalStateException("room not exist!!");
 
         room.getPlayers().removeIf(p -> p.getId().equals(playerId));
-        if(room.getPlayers().size()<4) room.setStatus(Status.OPEN);
+
+        if(room.getPlayers().size()<4){
+            room.setStatus(Status.OPEN);
+            room.setGame(null);
+        }
 
         if (room.getPlayers().isEmpty()) {
             deleteRoom(roomId);
         } else {
             saveRoom(room);
         }
-    }
 
-    public Game startNewGame(String roomId){
-
-        Room room =getRoom(roomId);
-
-        List<Player> players = room.getPlayers();
-
-        HashMap <String,Double> score =new HashMap<>();
-        for(Player player:players){
-            score.put(player.getId(),0.0);
-        }
-
-        Game game =new Game();
-        game.setScore(score);
-
-
-        return game;
+        return room;
     }
 
     public Room playerIsReady(String playerId,String roomId){
@@ -128,7 +157,7 @@ public class RoomService {
 
         saveRoom(room);
 
-        if(room.getPlayers().size()==4&&allReady) startNewGame(roomId);
+
         return room;
     }
 

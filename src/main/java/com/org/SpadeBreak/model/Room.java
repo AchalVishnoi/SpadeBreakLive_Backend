@@ -25,7 +25,6 @@ public class Room {
         this.name = name;
         this.status = status;
         this.players = players;
-        this.game=new Game();
     }
 
     public String getId() {

@@ -3,24 +3,23 @@ package com.org.SpadeBreak.model;
 
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Data
 public class Game {
 
-       private Map<String,Double> score=new HashMap<>();
+       private List<Map<String,PlayerRoundScore>> score=new ArrayList<>();
        private int rounds=5;
        private RoundState roundState=new RoundState();
 
-
-
-
-    public Map<String, Double> getScore() {
+    public List<Map<String, PlayerRoundScore>> getScore() {
         return score;
     }
 
-    public void setScore(Map<String, Double> score) {
+    public void setScore(List<Map<String, PlayerRoundScore>> score) {
         this.score = score;
     }
 
@@ -39,4 +38,6 @@ public class Game {
     public void setRoundState(RoundState roundState) {
         this.roundState = roundState;
     }
+
+
 }

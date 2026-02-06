@@ -1,6 +1,7 @@
 package com.org.SpadeBreak.model;
 
 
+import com.org.SpadeBreak.components.otherComponents.RoundStatus;
 import lombok.Data;
 
 import java.util.HashMap;
@@ -9,6 +10,7 @@ import java.util.Map;
 
 @Data
 public class RoundState {
+     private RoundStatus status;
      private int trickNum=0;
      private Map<String,PlayerRoundScore> score=new HashMap<>();
      private Map<String, List<String>> handCards=new HashMap<>();
@@ -63,5 +65,13 @@ public class RoundState {
 
     public void setTrickLeaderId(String trickLeaderId) {
         this.trickLeaderId = trickLeaderId;
+    }
+
+    public RoundStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(RoundStatus status) {
+        this.status = status;
     }
 }
