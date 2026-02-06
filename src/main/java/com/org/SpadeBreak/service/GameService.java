@@ -11,6 +11,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,15 +41,12 @@ public class GameService {
                         players.get(1).isReady()&&
                         players.get(2).isReady()&&
                         players.get(3).isReady()
-
                 )) throw  new IllegalStateException("Room is not ready!!");
 
-        HashMap<String,Double> score =new HashMap<>();
-        for(Player player:players){
-            score.put(player.getId(),0.0);
-        }
+        List<Map<String,PlayerRoundScore>> score =new ArrayList<>();
 
         Game game =new Game();
+
         game.setScore(score);
 
         room.setGame(game);
@@ -56,8 +54,6 @@ public class GameService {
         room.setStatus(Status.IN_GAME);
 
         game.setRounds(5);
-
-
 
         roomService.saveRoom(room);
 
@@ -114,8 +110,7 @@ public class GameService {
         round.setHandCards(handCards);
         RoundState prevRound= game.getRoundState();
 
-        if(prevRound==null)
-        round.setPlayerTurn(room.getPlayers().get(0).getId());
+        if(prevRound.getPlayerTurn()==null) round.setPlayerTurn(room.getPlayers().get(0).getId());
         else round.setPlayerTurn(prevRound.getPlayerTurn());
 
 
@@ -136,8 +131,11 @@ public class GameService {
         Game game=room.getGame();
         if(game==null) throw  new IllegalStateException("Game not started yet!");
 
-        Map<String,Double> scoreCard = game.getScore();
-        for(Map.Entry<String,PlayerRoundScore> score:roundScore.entrySet()){
+        List<Map<String,PlayerRoundScore>> scoreCard = game.getScore();
+        scoreCard.add(roundScore);
+        game.setScore(scoreCard);
+
+   /*       for(Map.Entry<String,PlayerRoundScore> score:roundScore.entrySet()){
             String playerId=score.getKey();
             PlayerRoundScore rs=score.getValue();
             Double finalScore;
@@ -145,8 +143,10 @@ public class GameService {
                 finalScore= ((double)rs.getCurrPoints()-(double) rs.getBet())/10+rs.getBet();
             else finalScore= -1*(double)rs.getBet();
 
-            scoreCard.put(playerId,scoreCard.getOrDefault(playerId,0.0)+finalScore);
+           // gameRoundScore.put(playerId,scoreCard.getOrDefault(playerId,0.0)+finalScore);
         }
+
+    */
 
         roomService.saveRoom(room);
 

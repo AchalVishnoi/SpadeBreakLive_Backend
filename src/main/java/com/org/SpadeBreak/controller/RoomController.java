@@ -99,32 +99,32 @@ public class RoomController {
     }
 
 
-        @PostMapping("/ready")
-        public ResponseEntity<?> playerIsReady(
-                @RequestParam String roomId,
-                @RequestParam String playerId
-        ){
+    @PostMapping("/ready")
+    public ResponseEntity<?> playerIsReady(
+            @RequestParam String roomId,
+            @RequestParam String playerId
+    ){
 
-            try{
-                Room room = roomService.playerIsReady(playerId,roomId);
-                broadcaster.broadcastRoomState(room, MessageType.PLAYER_IS_READY);
-                List<Player> playes=room.getPlayers();
+        try{
+            Room room = roomService.playerIsReady(playerId,roomId);
+            broadcaster.broadcastRoomState(room, MessageType.PLAYER_IS_READY);
+            List<Player> playes=room.getPlayers();
 
-                if(room!=null&&
-                        room.getPlayers().size()==4&&
-                        playes.get(0).isReady()&&
-                        playes.get(1).isReady()&&
-                        playes.get(2).isReady()&&
-                        playes.get(3).isReady()){
-                    gameService.startNewGame(room.getId());}
-                return ResponseEntity.ok(room);
-            }
-            catch (IllegalStateException e){
-                return ResponseEntity.badRequest().body(e.getMessage());
-            }
-
-
+            if(room!=null&&
+                    room.getPlayers().size()==4&&
+                    playes.get(0).isReady()&&
+                    playes.get(1).isReady()&&
+                    playes.get(2).isReady()&&
+                    playes.get(3).isReady()){
+                gameService.startNewGame(room.getId());}
+            return ResponseEntity.ok(room);
         }
+        catch (IllegalStateException e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+
+
+    }
 
 
 }
